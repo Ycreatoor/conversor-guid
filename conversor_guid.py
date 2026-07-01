@@ -4,12 +4,14 @@ import os
 
 
 def guid_para_base64(guid_str):
-    """Converte um GUID padrão para Base64 (Padrão MongoDB) e gera o filtro."""
+    """Converte um GUID padrão para Base64 (Padrão MongoDB/C#) e gera o filtro."""
     try:
         guid_str = guid_str.strip()
         obj_uuid = uuid.UUID(guid_str)
 
-        bytes_guid = obj_uuid.bytes
+        # A MÁGICA ACONTECE AQUI:
+        # Usamos .bytes_le (Little-Endian) em vez de .bytes para ficar idêntico ao C# / MongoDB Subtype 3
+        bytes_guid = obj_uuid.bytes_le 
         base64_bytes = base64.b64encode(bytes_guid) 
         b64_str = base64_bytes.decode("utf-8")
 
@@ -23,7 +25,7 @@ def guid_para_base64(guid_str):
 
 
 def base64_para_guid(b64_str):
-    """Converte um Base64 de volta para o formato GUID padrão."""
+    """Converte um Base64 (C#/MongoDB) de volta para o formato GUID padrão."""
     try:
         b64_str = b64_str.strip()
 
@@ -34,10 +36,14 @@ def base64_para_guid(b64_str):
         b64_str = b64_str.replace('-', '+').replace('_', '/')
 
         bytes_guid = base64.b64decode(b64_str)
-        return str(uuid.UUID(bytes=bytes_guid))
+        
+        # A MÁGICA NA DECODIFICAÇÃO:
+        # Avisamos o UUID que os bytes estão no formato Little-Endian (bytes_le)
+        return str(uuid.UUID(bytes_le=bytes_guid))
     except Exception:
         return "⚠️ Erro: String Base64 inválida ou não corresponde a um GUID de 16 bytes."
-
+    finally:
+        pass
 
 def main():
     # Ativa o estilo Matrix no terminal do Windows (Fundo preto, letras verdes)
